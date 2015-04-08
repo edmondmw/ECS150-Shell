@@ -54,6 +54,52 @@ int determineDirection(char c)
     return 0;
 }
 
+void upCommand(const list<string> &commandList, list<string>::const_iterator &it, string &command, string &original)
+{
+    //only show the the previous command if we aren't at the beginning and the list isn't empty
+    if(it != commandList.begin() && !commandList.empty() )
+    {
+        //If we press up when we are at the currentCommand(haven't pressed up before), then we need to store the original command
+        if(it == commandList.end())
+        {    
+            original = command;
+        }
+
+        it--;
+        //print backspaces to delete the currentCommand
+        for(int i = 0; i < command.length(); i++)
+        {
+            write(STDOUT_FILENO, "\b \b", 5);
+        }
+                                
+        write(STDOUT_FILENO, it->c_str(), it->length());
+        command = *it;
+    }
+}
+
+void downCommand(const list<string> &commandList, list<string>::const_iterator &it, string &command, string &original)
+{
+    //only show the the previous command if we aren't at the beginning and the list isn't empty
+    if(it != commandList.end() && !commandList.empty() )
+    {
+        it++;
+        //print backspaces to delete the currentCommand
+        for(int i = 0; i < command.length(); i++)
+        {
+            write(STDOUT_FILENO, "\b \b", 5);
+        }
+
+        if(it == commandList.end())
+        {
+            command = original;
+        }
+        else
+        {
+            command = *it;
+        }                      
+        write(STDOUT_FILENO, command.c_str(), command.length());
+    }
+}
 
 
 int main()
@@ -99,6 +145,7 @@ int main()
         //if character is up arrow then show the previous command 
         else if(direction == 1)
         {
+            /*
             //only show the the previous command if we aren't at the beginning and the list isn't empty
             if(it != historyList.begin() && !historyList.empty() )
             {
@@ -118,11 +165,15 @@ int main()
                 write(STDOUT_FILENO, it->c_str(), it->length());
                 currentCommand = *it;
             }
+            */
+            upCommand(historyList,it,currentCommand,originalCommand);
+           // cout<<"original: "<<originalCommand << "current: "<<currentCommand<<"it: "<<*it<<endl;
         }    
 
         //if character is down arrow, display the next command in the historyList
         else if(direction == 2)
         {
+            /*
             //only display next element if we aren't at the end and the list isn't empty
             if(it != historyList.end() && !historyList.empty())
             {    
@@ -143,15 +194,22 @@ int main()
                 }
 
                 write(STDOUT_FILENO, currentCommand.c_str(), currentCommand.length());
-            }
+            }*/
+            downCommand(historyList,it,currentCommand,originalCommand);
         }
 
         //if character is enter, add the currentCommand to the historyList, clear currentCommand, and reset the iterator
         else if(character == 0x0A)
         {
+            //remove the oldest command if we already have 10 commands stored
+            if(historyList.size() >= 10)
+            {
+                historyList.pop_front();
+            }
             historyList.push_back(currentCommand);
             currentCommand.clear();
             it = historyList.end();
+            //write(STDOUT_FILENO, "\r\n", 2);
         }
         //regular input, then just add the character to the command string and write it out
         else
@@ -159,6 +217,7 @@ int main()
             currentCommand+=character;
             write(STDOUT_FILENO, &character, 1);
         }
+
     }//while loop
 
 	return 0;

@@ -70,7 +70,7 @@ void upCommand(const list<string> &commandList, list<string>::const_iterator &it
         //print backspaces to delete the currentCommand
         for(int i = 0; i < command.length(); i++)
         {
-            write(STDOUT_FILENO, "\b \b", 5);
+            write(STDOUT_FILENO, "\b \b", 3);
         }
                                 
         write(STDOUT_FILENO, it->c_str(), it->length());
@@ -87,7 +87,7 @@ void downCommand(const list<string> &commandList, list<string>::const_iterator &
         it++;
         for(int i = 0; i < command.length(); i++)
         {
-            write(STDOUT_FILENO, "\b \b", 5);
+            write(STDOUT_FILENO, "\b \b", 3);
         }
 
         //if we are at the end after incrementing, we return to the original command
@@ -139,7 +139,7 @@ int main()
             if(!currentCommand.empty())
             {
                 currentCommand.pop_back();
-                write(STDOUT_FILENO, "\b \b", 5);     
+                write(STDOUT_FILENO, "\b \b", 3);     
             }
         }
 
@@ -166,9 +166,9 @@ int main()
             historyList.push_back(currentCommand);
             currentCommand.clear();
             it = historyList.end();
-            //write(STDOUT_FILENO, "\r\n", 2);
+            write(STDOUT_FILENO, "\r\n", 2);
         }
-        
+
         //regular input, then just add the character to the command string and write it out
         else
         {

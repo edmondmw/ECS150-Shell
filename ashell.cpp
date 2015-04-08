@@ -58,6 +58,7 @@ int determineDirection(char c)
 
 int main()
 {
+    //the user input
     char character;
     //the currentCommand being displayed
     string currentCommand;
@@ -70,7 +71,7 @@ int main()
     list<string>::const_iterator it;
     //set the iterator to the end of the list
     it = historyList.end();
-
+    //arrow key direction
     int direction;
 
     struct termios savedTermAttributes;
@@ -87,6 +88,7 @@ int main()
         //Also delete the last element in currentCommand
         if(character == 0x7F)
         {
+            //only delete if the currentCommand isn't empty
             if(!currentCommand.empty())
             {
                 currentCommand.pop_back();
@@ -94,11 +96,10 @@ int main()
             }
         }
 
-        //if character is up arrow
+        //if character is up arrow then show the previous command 
         else if(direction == 1)
         {
-            //gotta clear screen and show the previous thing on the stack
-            //if the iterator is not at the beginning  and not empty then show the previous command
+            //only show the the previous command if we aren't at the beginning and the list isn't empty
             if(it != historyList.begin() && !historyList.empty() )
             {
                 //If we press up when we are at the currentCommand(haven't pressed up before), then we need to store the original command
@@ -119,9 +120,10 @@ int main()
             }
         }    
 
-        //if character is down arrow
+        //if character is down arrow, display the next command in the historyList
         else if(direction == 2)
         {
+            //only display next element if we aren't at the end and the list isn't empty
             if(it != historyList.end() && !historyList.empty())
             {    
                 it++;
@@ -135,7 +137,6 @@ int main()
                 {
                     currentCommand = originalCommand;
                 }
-
                 else
                 {
                     currentCommand = *it;
@@ -145,21 +146,16 @@ int main()
             }
         }
 
-        //if character is enter
+        //if character is enter, add the currentCommand to the historyList, clear currentCommand, and reset the iterator
         else if(character == 0x0A)
         {
-            //place the current command into the history list
             historyList.push_back(currentCommand);
- 
-            //enter has been typed so currentCommand needs to be reset
             currentCommand.clear();
-
             it = historyList.end();
         }
-        //regular input, then just add the character to the command string and right it out
+        //regular input, then just add the character to the command string and write it out
         else
         {
-            //append the character into currentCommand
             currentCommand+=character;
             write(STDOUT_FILENO, &character, 1);
         }

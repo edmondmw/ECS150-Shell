@@ -44,12 +44,23 @@ int main()
     {
         //read the user input
         read(STDIN_FILENO, &character, 1);
-        //append the character into currentCommand
-        currentCommand+=character;
 
-        write(STDOUT_FILENO, &character, 1);
+        //if backspace then set character to \b \b so that it doesn't display
+        //Also delete the last element in currentCommand
+        if(character == 0x7F)
+        {
+            currentCommand.pop_back();
+            write(STDOUT_FILENO, "\b \b", 5);
+        }
 
-                
+        //regular input, then just add the character to the command string and right it out
+        else
+        {
+            //append the character into currentCommand
+            currentCommand+=character;
+            write(STDOUT_FILENO, &character, 1);
+        }
+         cout<<"\nSTRING: "<<currentCommand<<endl;            
     }
 	return 0;
 }

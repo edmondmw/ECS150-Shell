@@ -32,8 +32,8 @@ void setNonCanonicalMode(int fd, struct termios *savedattributes){
     tcsetattr(fd, TCSAFLUSH, &TermAttributes);
 }
 
-//determine if the input, c, is a up arrow
-bool isUp(char c)
+//Returns the direction of the arrow key pressed. If UP = 1, DOWN = 2, NONE = 0
+int determineDirection(char c)
 {
     if(c == 0x1B)
     {
@@ -43,72 +43,18 @@ bool isUp(char c)
             read(STDIN_FILENO, &c, 1);
             if(c == 0x41)
             {
-                return true;
+                return 1;
             }
-        }
-    }
-    return false;
-}
-
-//Determines if the input,c, is a down arrow
-bool isDown(char c)
-{
-    if(c == 0x1B)
-    {
-        read(STDIN_FILENO, &c, 1);
-        if(c == 0x5B)
-        {
-            read(STDIN_FILENO, &c, 1);
-            if(c == 0x42)
+            else if(c == 0x42)
             {
-                return true;
+                return 2;
             }
         }
     }
-
-    return false;
+    return 0;
 }
 
-/*void upCommand(const list<string> myList, list<string>::const_iterator &it, string &command, string &originalCommand)
-{
-    if(it == myList.end())
-    {
-        originalCommand = command;
-    }
 
-    it--;
-    //temporary for loop to clear the current line. Just print backspaces
-    for(int i = 0; i < command.length(); i++)
-    {
-        write(STDOUT_FILENO, "\b \b", 5);
-    }               
-    //write out the command
-    write(STDOUT_FILENO, it->c_str(), it->length());
-    command = *it;
-}
-
-void downCommand(const list<string> myList, list<string>::const_iterator &it, string &command, const string originalCommand)
-{
-    
-    it++;
-    //temporary for loop to clear the current line. Just print backspaces
-    for(int i = 0; i < command.length(); i++)
-    {
-        write(STDOUT_FILENO, "\b \b", 5);
-    }     
-
-    if(it == myList.end())
-    {
-        command = originalCommand;
-    }
-    else
-    {
-        command = *it;
-    }          
-    //write out the command
-    write(STDOUT_FILENO,command.c_str(), command.length());
-
-}*/
 
 int main()
 {
@@ -125,6 +71,8 @@ int main()
     //set the iterator to the end of the list
     it = historyList.end();
 
+    int direction;
+
     struct termios savedTermAttributes;
     
     setNonCanonicalMode(STDIN_FILENO, &savedTermAttributes);
@@ -133,43 +81,50 @@ int main()
     {
         //read the user input
         read(STDIN_FILENO, &character, 1);
+        direction = determineDirection(character);
 
         //if backspace then set character to \b \b so that it doesn't display
         //Also delete the last element in currentCommand
         if(character == 0x7F)
         {
-            currentCommand.pop_back();
-            write(STDOUT_FILENO, "\b \b", 5);
+            if(!currentCommand.empty())
+            {
+                currentCommand.pop_back();
+                write(STDOUT_FILENO, "\b \b", 5);     
+            }
         }
 
         //if character is up arrow
-        else if(isUp(character))
+        else if(direction == 1)
         {
             //gotta clear screen and show the previous thing on the stack
             //if the iterator is not at the beginning  and not empty then show the previous command
             if(it != historyList.begin() && !historyList.empty() )
             {
+                //If we press up when we are at the currentCommand(haven't pressed up before), then we need to store the original command
+                if(it == historyList.end())
+                {
+                    originalCommand = currentCommand;
+                }
+
                 it--;
-                //temporary for loop to clear the current line. Just print backspaces
+                //print backspaces to delete the currentCommand
                 for(int i = 0; i < currentCommand.length(); i++)
                 {
                     write(STDOUT_FILENO, "\b \b", 5);
                 }
-                
-                //write out the command
+                                
                 write(STDOUT_FILENO, it->c_str(), it->length());
                 currentCommand = *it;
-
-              //  upCommand(historyList, it, currentCommand, originalCommand);
             }
         }    
 
         //if character is down arrow
-        else if(isDown(character))
+        else if(direction == 2)
         {
             if(it != historyList.end() && !historyList.empty())
             {    
-               it++;
+                it++;
                 for(int i = 0; i < currentCommand.length(); i++)
                 {
                     write(STDOUT_FILENO, "\b \b", 5);
@@ -178,12 +133,15 @@ int main()
                 //if iterator is at the end then we write out the original command
                 if(it == historyList.end())
                 {
-                    
+                    currentCommand = originalCommand;
                 }
 
-              //  write(STDOUT_FILENO, )
-                //cout<<endl<<"in  if down"<<endl;
-                //downCommand(historyList,it,currentCommand,originalCommand);
+                else
+                {
+                    currentCommand = *it;
+                }
+
+                write(STDOUT_FILENO, currentCommand.c_str(), currentCommand.length());
             }
         }
 

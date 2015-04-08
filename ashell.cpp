@@ -31,6 +31,43 @@ void setNonCanonicalMode(int fd, struct termios *savedattributes){
     tcsetattr(fd, TCSAFLUSH, &TermAttributes);
 }
 
+//determine if the input, c, is a up arrow
+bool isUp(char c)
+{
+    if(c == 0x1B)
+    {
+        read(STDIN_FILENO, &c, 1);
+        if(c == 0x5B)
+        {
+            read(STDIN_FILENO, &c, 1);
+            if(c == 0x41)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//Determines if the input,c, is a down arrow
+bool isDown(char c)
+{
+    if(c == 0x1B)
+    {
+        read(STDIN_FILENO, &c, 1);
+        if(c == 0x5B)
+        {
+            read(STDIN_FILENO, &c, 1);
+            if(c == 0x42)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 int main()
 {
     //string currentCommand;
@@ -53,6 +90,23 @@ int main()
             write(STDOUT_FILENO, "\b \b", 5);
         }
 
+        //if character is up arrow
+        else if(isUp(character))
+        {
+            //gotta clear screen and show the previous thing on the stack
+        }    
+
+        //if character is down arrow
+        else if(isDown(character))
+        {
+            //do down arrow stuff
+        }
+
+        //if character is enter
+        else if(character == 0x0A)
+        {
+            //do enter stuff
+        }
         //regular input, then just add the character to the command string and right it out
         else
         {
@@ -60,8 +114,8 @@ int main()
             currentCommand+=character;
             write(STDOUT_FILENO, &character, 1);
         }
-         cout<<"\nSTRING: "<<currentCommand<<endl;            
     }
+
 	return 0;
 }
 

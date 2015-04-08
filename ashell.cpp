@@ -54,6 +54,7 @@ int determineDirection(char c)
     return 0;
 }
 
+//Displays the previous command in the historyList if up arrow is pressed
 void upCommand(const list<string> &commandList, list<string>::const_iterator &it, string &command, string &original)
 {
     //only show the the previous command if we aren't at the beginning and the list isn't empty
@@ -77,18 +78,19 @@ void upCommand(const list<string> &commandList, list<string>::const_iterator &it
     }
 }
 
+//When you press the down arrow key, it displays the next command in the history list
 void downCommand(const list<string> &commandList, list<string>::const_iterator &it, string &command, string &original)
 {
-    //only show the the previous command if we aren't at the beginning and the list isn't empty
+    //Only show the next command if we aren't at the end and the list isn't empty
     if(it != commandList.end() && !commandList.empty() )
     {
         it++;
-        //print backspaces to delete the currentCommand
         for(int i = 0; i < command.length(); i++)
         {
             write(STDOUT_FILENO, "\b \b", 5);
         }
 
+        //if we are at the end after incrementing, we return to the original command
         if(it == commandList.end())
         {
             command = original;
@@ -134,7 +136,6 @@ int main()
         //Also delete the last element in currentCommand
         if(character == 0x7F)
         {
-            //only delete if the currentCommand isn't empty
             if(!currentCommand.empty())
             {
                 currentCommand.pop_back();
@@ -144,57 +145,13 @@ int main()
 
         //if character is up arrow then show the previous command 
         else if(direction == 1)
-        {
-            /*
-            //only show the the previous command if we aren't at the beginning and the list isn't empty
-            if(it != historyList.begin() && !historyList.empty() )
-            {
-                //If we press up when we are at the currentCommand(haven't pressed up before), then we need to store the original command
-                if(it == historyList.end())
-                {
-                    originalCommand = currentCommand;
-                }
-
-                it--;
-                //print backspaces to delete the currentCommand
-                for(int i = 0; i < currentCommand.length(); i++)
-                {
-                    write(STDOUT_FILENO, "\b \b", 5);
-                }
-                                
-                write(STDOUT_FILENO, it->c_str(), it->length());
-                currentCommand = *it;
-            }
-            */
+        {           
             upCommand(historyList,it,currentCommand,originalCommand);
-           // cout<<"original: "<<originalCommand << "current: "<<currentCommand<<"it: "<<*it<<endl;
         }    
 
         //if character is down arrow, display the next command in the historyList
         else if(direction == 2)
         {
-            /*
-            //only display next element if we aren't at the end and the list isn't empty
-            if(it != historyList.end() && !historyList.empty())
-            {    
-                it++;
-                for(int i = 0; i < currentCommand.length(); i++)
-                {
-                    write(STDOUT_FILENO, "\b \b", 5);
-                }
-
-                //if iterator is at the end then we write out the original command
-                if(it == historyList.end())
-                {
-                    currentCommand = originalCommand;
-                }
-                else
-                {
-                    currentCommand = *it;
-                }
-
-                write(STDOUT_FILENO, currentCommand.c_str(), currentCommand.length());
-            }*/
             downCommand(historyList,it,currentCommand,originalCommand);
         }
 
@@ -211,6 +168,7 @@ int main()
             it = historyList.end();
             //write(STDOUT_FILENO, "\r\n", 2);
         }
+        
         //regular input, then just add the character to the command string and write it out
         else
         {

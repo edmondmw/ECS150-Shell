@@ -7,6 +7,8 @@
 #include <termios.h>
 #include <ctype.h>
 #include <list>
+#include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -147,9 +149,53 @@ void backspace(string &current)
     }
 }
 
-//When enter key is pressed, clear currentCommand and originalCommand, reset iterator, and place the currentCommand into the linked list
-void enterReset(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
+void showHistory(const list<string> commandList)
 {
+    list<string>::const_iterator it;
+    int count = 0;
+    string charCount;
+
+    for(it = commandList.begin(); it!=commandList.end(); it++)
+    {
+        charCount = char(count + '0');
+        write(STDOUT_FILENO, charCount.c_str(), charCount.size());
+        write(STDOUT_FILENO, " ", 1);
+        write(STDOUT_FILENO, it->c_str(), it->size());
+        write(STDOUT_FILENO, "\r\n", 2);
+        count++;
+    }
+}
+
+void executeCommand(const string command, const list<string> commandList)
+{    
+    //Used to store the string tokens after being parsed
+    vector<string> tokens; 
+    string aToken;
+
+    stringstream ss(command);
+
+   
+    //parse the string
+    while(getline(ss, aToken, ' '))
+    {
+        tokens.push_back(aToken);
+    }
+
+    //if the command was all whitespace, we exit the function
+    if(tokens.empty())
+    {
+        return;
+    }
+    if(tokens[0] == "history")
+    {
+        showHistory(commandList);
+    }
+}
+
+//When enter key is pressed place the currentCommand into the linked list and new line
+void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
+{    
+    write(STDOUT_FILENO, "\r\n", 2);
     //if the list already has 10 values, we remove the least recent command
     if(commandList.size() >= 10)
     {
@@ -157,12 +203,14 @@ void enterReset(list<string> &commandList, list<string>::const_iterator &it, str
     }
     //place the current comand into the list
     commandList.push_back(current);
+
+    executeCommand(current, commandList);
     current.clear();
     original.clear();
     //reset the iterator to the end of the list
     it = commandList.end();
-    write(STDOUT_FILENO, "\r\n", 2);
 }
+
 
 int main()
 {
@@ -203,8 +251,7 @@ int main()
                 downCommand(historyList, it, currentCommand, originalCommand);
                 break;
             case enter:
-                //probably need some kind of execute function here before the reset
-                enterReset(historyList, it, currentCommand, originalCommand);
+                enterCommand(historyList, it, currentCommand, originalCommand);
                 break;
             case back:
                 backspace(currentCommand);

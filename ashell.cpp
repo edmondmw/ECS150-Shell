@@ -169,14 +169,12 @@ void showHistory(const list<string> commandList)
 void executeCommand(const string command, const list<string> commandList)
 {    
     //Used to store the string tokens after being parsed
-    vector<string> tokens; 
+    vector<string> tokens;
+    stringstream iss(command);
     string aToken;
 
-    stringstream ss(command);
-
-   
     //parse the string
-    while(getline(ss, aToken, ' '))
+    while(iss >> aToken)
     {
         tokens.push_back(aToken);
     }
@@ -186,6 +184,7 @@ void executeCommand(const string command, const list<string> commandList)
     {
         return;
     }
+
     if(tokens[0] == "history")
     {
         showHistory(commandList);

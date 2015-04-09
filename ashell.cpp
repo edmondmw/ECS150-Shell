@@ -121,6 +121,8 @@ int main()
     it = historyList.end();
     //arrow key direction
     int direction;
+	char *path;
+	path=get_current_dir_name();
 
     struct termios savedTermAttributes;
     
@@ -128,6 +130,17 @@ int main()
     
     while(true)
     {
+		if(0/*path.size<=16*/)
+			write(STDOUT_FILENO,path,16);
+		else
+		{
+			write(STDOUT_FILENO,"/...",4);
+			write(STDOUT_FILENO,path,11);	//strlen(path)-10
+			write(STDOUT_FILENO,">",1);
+			write(STDOUT_FILENO,"\n",1);
+		}
+		
+//		cout<< path<< endl;
         //read the user input
         read(STDIN_FILENO, &character, 1);
         direction = determineDirection(character);

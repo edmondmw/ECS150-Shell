@@ -10,6 +10,7 @@
 
 using namespace std;
 
+//Key types
 static const int regular = 0;
 static const int up = 1;
 static const int down = 2;
@@ -149,13 +150,16 @@ void backspace(string &current)
 //When enter key is pressed, clear currentCommand and originalCommand, reset iterator, and place the currentCommand into the linked list
 void enterReset(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
 {
+    //if the list already has 10 values, we remove the least recent command
     if(commandList.size() >= 10)
     {
         commandList.pop_front();
     }
+    //place the current comand into the list
     commandList.push_back(current);
     current.clear();
     original.clear();
+    //reset the iterator to the end of the list
     it = commandList.end();
     write(STDOUT_FILENO, "\r\n", 2);
 }

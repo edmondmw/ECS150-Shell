@@ -240,7 +240,7 @@ void executeCommand(const string command, const list<string> commandList)
     }
 
     //switch used to determine what to do depending on the command
-    switch(determineCommand(command))
+    switch(determineCommand(tokens[0]))
     {
         case eCd:
             //write an ls function

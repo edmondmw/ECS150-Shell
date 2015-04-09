@@ -9,6 +9,12 @@
 #include <list>
 #include <vector>
 #include <sstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <dirent.h>
 
 using namespace std;
 
@@ -219,6 +225,52 @@ void printWorkingDirectory()
     write(STDOUT_FILENO, "\r\n",2);
 }
 
+//changes the current directory
+void changeDirectory(const vector<string> tokens)
+{
+    string path;
+    int isError = -1;
+
+    //if user only typed "cd" go home
+    if(tokens.size() == 1)
+    {
+        path = getenv("HOME");
+    }
+    //otherwise go to the specified directory
+    else
+    {
+        path = tokens[1];
+    }
+
+    isError = chdir(path.c_str());
+
+    //directory change successful
+    if(isError == 0)
+    {
+        return;
+    }
+    //unsuccessful directory change
+    else
+    {
+        switch(errno)
+        {
+            case EACCES:
+                write(STDOUT_FILENO, "Permission denied!", 18);
+                write(STDOUT_FILENO, "\r\n", 2);
+                break;
+            case ENOTDIR:
+                write(STDOUT_FILENO, tokens[1].c_str(), tokens[1].size());
+                write(STDOUT_FILENO, " not a directory!", 16);
+                write(STDOUT_FILENO, "\r\n", 2);
+                break;
+            default:
+                write(STDOUT_FILENO, "Error changing directory", 24);
+                write(STDOUT_FILENO, "\r\n", 2);
+                break;    
+        }
+    }
+}
+
 //function to execute a command after enter is pressed
 void executeCommand(const string command, const list<string> commandList)
 {    
@@ -243,7 +295,7 @@ void executeCommand(const string command, const list<string> commandList)
     switch(determineCommand(tokens[0]))
     {
         case eCd:
-            //write an ls function
+            changeDirectory(tokens);
             break;
         case eLs:
             //write a cd function

@@ -13,12 +13,26 @@
 using namespace std;
 
 //Key types
-static const int regular = 0;
-static const int up = 1;
-static const int down = 2;
-static const int enter = 3;
-static const int del = 4;
-static const int back = 5;
+enum keys
+{
+    regular = 0,
+    up = 1,
+    down = 2,
+    enter = 3,
+    del = 4,
+    back = 5,
+};
+
+//commands
+enum commands
+{
+    eCd = 0,
+    eLs,
+    ePwd,
+    eHistory,
+    eExit,
+    eOther
+};
 
 //sets to noncanonical mode, meaning input can be processed before pressing enter
 void setNonCanonicalMode(int fd, struct termios *savedattributes){
@@ -43,7 +57,7 @@ void setNonCanonicalMode(int fd, struct termios *savedattributes){
 }
 
 //Determine what key the user pressed
-int determineKey(char c)
+keys determineKey(char c)
 {    
     //up or down arrow or delete
     if(c == 0x1B)
@@ -87,6 +101,35 @@ int determineKey(char c)
     else
     {
         return regular;
+    }
+}
+
+//determine what command was entered
+commands determineCommand(string command)
+{
+    if(command == "cd")
+    {
+        return eCd;
+    }
+    else if(command == "ls")
+    {
+        return eLs;
+    }
+    else if(command == "pwd")
+    {
+        return ePwd;
+    }
+    else if(command == "history")
+    {
+        return eHistory;
+    }
+    else if(command == "exit")
+    {
+        return eExit;
+    }
+    else
+    {
+        return eOther;
     }
 }
 
@@ -149,6 +192,8 @@ void backspace(string &current)
     }
 }
 
+
+//Shows the previous 10 commands
 void showHistory(const list<string> commandList)
 {
     list<string>::const_iterator it;
@@ -166,6 +211,7 @@ void showHistory(const list<string> commandList)
     }
 }
 
+//function to execute a command after enter is pressed
 void executeCommand(const string command, const list<string> commandList)
 {    
     //Used to store the string tokens after being parsed
@@ -185,12 +231,16 @@ void executeCommand(const string command, const list<string> commandList)
         return;
     }
 
-    if(tokens[0] == "history")
+    //switch used to determine what to do depending on the command
+    switch(determineCommand(command))
     {
-        showHistory(commandList);
+        case eHistory:
+            showHistory(commandList);
+            break;
+        default:
+            break;
     }
 }
-
 //When enter key is pressed place the currentCommand into the linked list and new line
 void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
 {    

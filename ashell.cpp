@@ -10,6 +10,13 @@
 
 using namespace std;
 
+static const int regular = 0;
+static const int up = 1;
+static const int down = 2;
+static const int enter = 3;
+static const int del = 4;
+static const int back = 5;
+
 //sets to noncanonical mode, meaning input can be processed before pressing enter
 void setNonCanonicalMode(int fd, struct termios *savedattributes){
     struct termios TermAttributes;
@@ -32,9 +39,10 @@ void setNonCanonicalMode(int fd, struct termios *savedattributes){
     tcsetattr(fd, TCSAFLUSH, &TermAttributes);
 }
 
-//Returns the direction of the arrow key pressed. If UP = 1, DOWN = 2, NONE = 0
-int determineDirection(char c)
-{
+//Determine what key the user pressed
+int determineKey(char c)
+{    
+    //up or down arrow or delete
     if(c == 0x1B)
     {
         read(STDIN_FILENO, &c, 1);
@@ -43,15 +51,40 @@ int determineDirection(char c)
             read(STDIN_FILENO, &c, 1);
             if(c == 0x41)
             {
-                return 1;
+                return up;
             }
             else if(c == 0x42)
             {
-                return 2;
+                return down;
             }
+            else if(c == 0x33)
+            {
+                read(STDIN_FILENO, &c, 1);
+                if(c==0x7E)
+                {
+                    return del;
+                }               
+            }   
+
         }
     }
-    return 0;
+
+    //backspace
+    else if(c == 0x7F)
+    {
+        return back;
+    }
+
+    //enter
+    else if(c == 0x0A)
+    {
+        return enter;
+    }
+    //regular input
+    else
+    {
+        return regular;
+    }
 }
 
 //Displays the previous command in the historyList if up arrow is pressed
@@ -103,6 +136,29 @@ void downCommand(const list<string> &commandList, list<string>::const_iterator &
     }
 }
 
+//Delete the previous character 
+void backspace(string &current)
+{
+    if(!current.empty())
+    {
+        current.pop_back();
+        write(STDOUT_FILENO, "\b \b", 3);     
+    }
+}
+
+//When enter key is pressed, clear currentCommand and originalCommand, reset iterator, and place the currentCommand into the linked list
+void enterReset(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
+{
+    if(commandList.size() >= 10)
+    {
+        commandList.pop_front();
+    }
+    commandList.push_back(current);
+    current.clear();
+    original.clear();
+    it = commandList.end();
+    write(STDOUT_FILENO, "\r\n", 2);
+}
 
 int main()
 {
@@ -119,8 +175,8 @@ int main()
     list<string>::const_iterator it;
     //set the iterator to the end of the list
     it = historyList.end();
-    //arrow key direction
-    int direction;
+    //what kind of key was pressed
+    int key;
 
     struct termios savedTermAttributes;
     
@@ -130,52 +186,33 @@ int main()
     {
         //read the user input
         read(STDIN_FILENO, &character, 1);
-        direction = determineDirection(character);
+        //determine which key the user pressed
+        key = determineKey(character);
 
-        //if backspace then set character to \b \b so that it doesn't display
-        //Also delete the last element in currentCommand
-        if(character == 0x7F)
+        //switch statement to determine what to do based on input
+        switch(key)
         {
-            if(!currentCommand.empty())
-            {
-                currentCommand.pop_back();
-                write(STDOUT_FILENO, "\b \b", 3);     
-            }
+            case up:
+                upCommand(historyList, it, currentCommand, originalCommand);
+                break;
+            case down:
+                downCommand(historyList, it, currentCommand, originalCommand);
+                break;
+            case enter:
+                //probably need some kind of execute function here before the reset
+                enterReset(historyList, it, currentCommand, originalCommand);
+                break;
+            case back:
+                backspace(currentCommand);
+                break;
+            case del:
+                backspace(currentCommand);
+                break;
+            default:
+                currentCommand+=character;
+                write(STDOUT_FILENO, &character, 1);
+                break;
         }
-
-        //if character is up arrow then show the previous command 
-        else if(direction == 1)
-        {           
-            upCommand(historyList,it,currentCommand,originalCommand);
-        }    
-
-        //if character is down arrow, display the next command in the historyList
-        else if(direction == 2)
-        {
-            downCommand(historyList,it,currentCommand,originalCommand);
-        }
-
-        //if character is enter, add the currentCommand to the historyList, clear currentCommand, and reset the iterator
-        else if(character == 0x0A)
-        {
-            //remove the oldest command if we already have 10 commands stored
-            if(historyList.size() >= 10)
-            {
-                historyList.pop_front();
-            }
-            historyList.push_back(currentCommand);
-            currentCommand.clear();
-            it = historyList.end();
-            write(STDOUT_FILENO, "\r\n", 2);
-        }
-
-        //regular input, then just add the character to the command string and write it out
-        else
-        {
-            currentCommand+=character;
-            write(STDOUT_FILENO, &character, 1);
-        }
-
     }//while loop
 
 	return 0;

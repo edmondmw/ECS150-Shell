@@ -211,6 +211,14 @@ void showHistory(const list<string> commandList)
     }
 }
 
+//Prints the working directory
+void printWorkingDirectory()
+{
+    string workingDirectory = get_current_dir_name();
+    write(STDOUT_FILENO, workingDirectory.c_str(), workingDirectory.size());
+    write(STDOUT_FILENO, "\r\n",2);
+}
+
 //function to execute a command after enter is pressed
 void executeCommand(const string command, const list<string> commandList)
 {    
@@ -219,7 +227,7 @@ void executeCommand(const string command, const list<string> commandList)
     stringstream iss(command);
     string aToken;
 
-    //parse the string
+    //parse the string so that you get rid of whitespaces
     while(iss >> aToken)
     {
         tokens.push_back(aToken);
@@ -234,8 +242,20 @@ void executeCommand(const string command, const list<string> commandList)
     //switch used to determine what to do depending on the command
     switch(determineCommand(command))
     {
+        case eCd:
+            //write an ls function
+            break;
+        case eLs:
+            //write a cd function
+            break;
+        case ePwd:
+            printWorkingDirectory();
+            break;
         case eHistory:
             showHistory(commandList);
+            break;
+        case eExit:
+            exit(0);
             break;
         default:
             break;

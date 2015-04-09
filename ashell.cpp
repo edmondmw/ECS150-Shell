@@ -103,6 +103,35 @@ void downCommand(const list<string> &commandList, list<string>::const_iterator &
     }
 }
 
+void beginning()
+{
+	string path;
+	path=get_current_dir_name();
+	int pathSize=path.size();
+	char *cwd;
+	char buff[pathSize];
+	cwd=getcwd(buff, pathSize);
+	if(path.size()<=15)
+	{
+		write(STDOUT_FILENO, path.c_str(),path.length());
+		write(STDOUT_FILENO, ">",1);
+	}
+	else
+	{
+		for(pathSize-1; pathSize!=0; pathSize--)
+		{
+			if(path[pathSize]=='/')
+			{
+				string temp=path.substr(pathSize);
+				write(STDOUT_FILENO, "/...",4);
+				write(STDOUT_FILENO,temp.c_str(), temp.length());
+				write(STDOUT_FILENO, ">",1);
+				break;
+			}
+		}
+	}
+}
+		
 
 int main()
 {
@@ -123,13 +152,14 @@ int main()
     int direction;
 	string path;
 	path=get_current_dir_name();
-
+	int pathSize=path.size();
     struct termios savedTermAttributes;
     
     setNonCanonicalMode(STDIN_FILENO, &savedTermAttributes);
-    
+	//beginning();    
     while(true)
     {
+/*		for(pathSize; pathSize!=0; pathSize--){
 		if(path.size()<=15)
 		{
 			write(STDOUT_FILENO,path.c_str(),15);
@@ -137,12 +167,14 @@ int main()
 		}
 		else
 		{
+			if(path[pathSize]=="/"){
 			write(STDOUT_FILENO,"/...",4);
-			write(STDOUT_FILENO,path.c_str(),11);	//strlen(path)-10
+			write(STDOUT_FILENO,path,temp.lenght());	//strlen(path)-10
 			write(STDOUT_FILENO,">",1);
-			write(STDOUT_FILENO,"\r",2);
+			write(STDOUT_FILENO,"\n",2);
+			}
 		}
-	
+*/	
 //		cout<< path<< endl;
         //read the user input
         read(STDIN_FILENO, &character, 1);

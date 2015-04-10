@@ -194,24 +194,25 @@ void beginning()
 	string path;
 	path=get_current_dir_name();
 	int pathSize=path.size();
-	char *cwd;
-	char buff[pathSize];
-	cwd=getcwd(buff, pathSize);
+	//checks if path's length is less then 15 characters
 	if(path.size()<=15)
 	{
 		write(STDOUT_FILENO, path.c_str(),path.length());
-		write(STDOUT_FILENO, ">",1);
+		write(STDOUT_FILENO, "> ",2);
 	}
+	// if path is more then 15 characters go here
 	else
 	{
+		//checks back of path and iterates downward till it finds first "/"
 		for(pathSize-1; pathSize!=0; pathSize--)
 		{
 			if(path[pathSize]=='/')
 			{
+				//stores a substring of path after it sees first "/"
 				string temp=path.substr(pathSize);
 				write(STDOUT_FILENO, "/...",4);
 				write(STDOUT_FILENO,temp.c_str(), temp.length());
-				write(STDOUT_FILENO, ">",1);
+				write(STDOUT_FILENO, "> ",2);
 				break;
 			}
 		}

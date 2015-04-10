@@ -257,6 +257,7 @@ void printWorkingDirectory()
 }
 
 //changes the current directory
+//tokens is a vector of strings for each argument of the command
 void changeDirectory(const vector<string> tokens)
 {
     string path;
@@ -302,6 +303,44 @@ void changeDirectory(const vector<string> tokens)
     }
 }
 
+//lists the files in the current directory, also shows permissions
+//token is a vector of strings for each argument of the command
+void listFiles(vector<string> tokens)
+{
+    DIR *directory;
+    struct dirent *it;
+    vector<string> allFileNames;
+    string path;
+    //if there is only one string in token, then only typed "ls", so show files for current directory
+    if(tokens.size()==1)
+    {
+        path = get_current_dir_name();
+    }
+    //otherwise we want the specified directory
+    else
+    {
+        path = tokens[1];
+    }
+
+    //open the directory
+    directory = opendir(path.c_str());
+
+    //read all the files and place them into allFiles
+    while((it = readdir(directory))!=NULL)
+    {
+        allFileNames.push_back(it->d_name);
+    }
+
+    //write out the directory names
+    for(int i = 0; i < allFileNames.size(); i++)
+    {
+        write(STDOUT_FILENO, allFileNames[i].c_str(), allFileNames[i].size());
+        write(STDOUT_FILENO, "\r\n", 2);
+    }
+
+    closedir(directory);
+}
+
 //function to execute a command after enter is pressed
 void executeCommand(const string command, const list<string> commandList)
 {    
@@ -329,7 +368,7 @@ void executeCommand(const string command, const list<string> commandList)
             changeDirectory(tokens);
             break;
         case eLs:
-            //write a cd function
+            listFiles(tokens);
             break;
         case ePwd:
             printWorkingDirectory();
@@ -344,6 +383,7 @@ void executeCommand(const string command, const list<string> commandList)
             break;
     }
 }
+
 //When enter key is pressed place the currentCommand into the linked list and new line
 void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
 {    

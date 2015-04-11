@@ -303,14 +303,121 @@ void changeDirectory(const vector<string> tokens)
     }
 }
 
+//print the permission status
+void showPermission(bool isDirectory, struct stat buffer)
+{
+    //string for all the file permissions
+    string permission;
+
+    if(isDirectory)
+    {
+        permission += 'd';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    //permissions for the user
+    if(buffer.st_mode & S_IRUSR)
+    {
+        permission += 'r';
+    }
+    else
+    {
+        permission +='-';
+    }
+
+    if(buffer.st_mode & S_IWUSR)
+    {
+        permission+='w';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    if(buffer.st_mode & S_IXUSR)
+    {
+        permission += 'x';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    //permissions for the group
+    if(buffer.st_mode & S_IRGRP)
+    {
+        permission += 'r';
+    }
+    else
+    {
+        permission +='-';
+    }
+
+    if(buffer.st_mode & S_IWGRP)
+    {
+        permission+='w';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    if(buffer.st_mode & S_IXGRP)
+    {
+        permission += 'x';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    //permissions for the others 
+    if(buffer.st_mode & S_IROTH)
+    {
+        permission += 'r';
+    }
+    else
+    {
+        permission +='-';
+    }
+
+    if(buffer.st_mode & S_IWOTH)
+    {
+        permission+='w';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    if(buffer.st_mode & S_IXOTH)
+    {
+        permission += 'x';
+    }
+    else
+    {
+        permission += '-';
+    }
+
+    write(STDOUT_FILENO, permission.c_str(), permission.size());
+}
+
 //lists the files in the current directory, also shows permissions
 //token is a vector of strings for each argument of the command
 void listFiles(vector<string> tokens)
 {
     DIR *directory;
     struct dirent *it;
+    //vector of all the file names inside a directory
     vector<string> allFileNames;
+    //parallel vector telling if the specific file is a directory
+    vector<bool> isDirectory;
     string path;
+    struct stat buffer;
+
     //if there is only one string in token, then only typed "ls", so show files for current directory
     if(tokens.size()==1)
     {
@@ -322,23 +429,46 @@ void listFiles(vector<string> tokens)
         path = tokens[1];
     }
 
-    //open the directory
-    directory = opendir(path.c_str());
+    //open the directory and if it is null then print error message and exit
+    if((directory = opendir(path.c_str())) == NULL)
+    {
+        write(STDOUT_FILENO,"Failed to open directory \"", 26 );
+        write(STDOUT_FILENO, path.c_str(),path.size());
+        write(STDOUT_FILENO, "/\"\r\n", 4);
+        return;
+    }
 
     //read all the files and place them into allFiles
     while((it = readdir(directory))!=NULL)
     {
         allFileNames.push_back(it->d_name);
+
+        //if this file is a directory then push true for that index in the isDirectory vector
+        if(it->d_type == DT_DIR)
+        {
+            isDirectory.push_back(true);
+        }
+        else
+        {
+            isDirectory.push_back(false);
+        }
     }
 
     //write out the directory names
     for(int i = 0; i < allFileNames.size(); i++)
     {
+        string fullPath = path + '/' + allFileNames[i];
+
+        stat(fullPath.c_str(), &buffer);
+
+        showPermission(isDirectory[i], buffer);
+        write(STDOUT_FILENO, " ", 1);
         write(STDOUT_FILENO, allFileNames[i].c_str(), allFileNames[i].size());
         write(STDOUT_FILENO, "\r\n", 2);
     }
-
+    //close the directory
     closedir(directory);
+
 }
 
 //function to execute a command after enter is pressed
@@ -397,6 +527,7 @@ void enterCommand(list<string> &commandList, list<string>::const_iterator &it, s
     commandList.push_back(current);
 
     executeCommand(current, commandList);
+
     current.clear();
     original.clear();
     //reset the iterator to the end of the list

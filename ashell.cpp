@@ -161,6 +161,8 @@ void upCommand(const list<string> &commandList, list<string>::const_iterator &it
         write(STDOUT_FILENO, it->c_str(), it->length());
         command = *it;
     }
+	else
+		write(STDOUT_FILENO, "\a",1);
 }
 
 //When you press the down arrow key, it displays the next command in the history list
@@ -186,6 +188,8 @@ void downCommand(const list<string> &commandList, list<string>::const_iterator &
         }                      
         write(STDOUT_FILENO, command.c_str(), command.length());
     }
+	else
+		write(STDOUT_FILENO,"\a",1);
 }
 
 //Shows the current directory, placed at beginning of each line
@@ -227,6 +231,8 @@ void backspace(string &current)
         current.pop_back();
         write(STDOUT_FILENO, "\b \b", 3);     
     }
+	else
+		write(STDOUT_FILENO, "\a",1);
 }
 
 
@@ -490,7 +496,8 @@ void executeCommand(const string command, const list<string> commandList)
     {
         return;
     }
-
+	for(int i=0; i<tokens.size();i++)
+		cout<<tokens[i]<<endl;
     //switch used to determine what to do depending on the command
     switch(determineCommand(tokens[0]))
     {
@@ -514,6 +521,33 @@ void executeCommand(const string command, const list<string> commandList)
     }
 }
 
+<<<<<<< HEAD
+=======
+/*void forking()
+{
+	char *arg;	//last thing in args has to be NULL
+	pid_t pid = fork();
+
+	if(pid<0)
+	{
+		write(STDOUT_FILENO, "fork failed", 11);
+		exit(1);
+	}
+	//child is born and now exec's
+	else if(pid ==0)
+	{	//reads in commands not created (cat)
+		read(STDIN_FILENO,&arg,1);
+		execvp("/bin/",arg);	//how to make it so execvp goes to bin and then user input
+		exit(1);
+	}
+	//parent
+	else if(pid>0
+	{
+		//do parent stuff and wait for child to finish 
+		wait(NULL);
+	}
+}*/
+>>>>>>> origin/master
 //When enter key is pressed place the currentCommand into the linked list and new line
 void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
 {    
@@ -534,7 +568,6 @@ void enterCommand(list<string> &commandList, list<string>::const_iterator &it, s
     it = commandList.end();
     beginning();
 }
-
 
 int main()
 {
@@ -558,14 +591,15 @@ int main()
     
     setNonCanonicalMode(STDIN_FILENO, &savedTermAttributes);
 	beginning();    
-
-    while(true)
+   
+	 while(true)
     {	
+		
         read(STDIN_FILENO, &character, 1);
         //determine which key the user pressed
         key = determineKey(character);
-
-        //switch statement to determine what to do based on input
+        
+		//switch statement to determine what to do based on input
         switch(key)
         {
             case up:

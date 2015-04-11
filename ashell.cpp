@@ -496,8 +496,7 @@ void executeCommand(const string command, const list<string> commandList)
     {
         return;
     }
-	for(int i=0; i<tokens.size();i++)
-		cout<<tokens[i]<<endl;
+
     //switch used to determine what to do depending on the command
     switch(determineCommand(tokens[0]))
     {
@@ -521,8 +520,7 @@ void executeCommand(const string command, const list<string> commandList)
     }
 }
 
-<<<<<<< HEAD
-=======
+
 /*void forking()
 {
 	char *arg;	//last thing in args has to be NULL
@@ -547,7 +545,7 @@ void executeCommand(const string command, const list<string> commandList)
 		wait(NULL);
 	}
 }*/
->>>>>>> origin/master
+
 //When enter key is pressed place the currentCommand into the linked list and new line
 void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )
 {    
@@ -592,7 +590,7 @@ int main()
     setNonCanonicalMode(STDIN_FILENO, &savedTermAttributes);
 	beginning();    
    
-	 while(true)
+	while(true)
     {	
 		
         read(STDIN_FILENO, &character, 1);

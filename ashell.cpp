@@ -579,11 +579,16 @@ void executeCommand(const string command, const list<string> commandList)
 		{
 			dup2(tokens[]. STDOUT_FILENO);
 		}*/	
-		vector <char *>arg;
-		for(int i=0; i<tokens.size(); i++)
+        // need tempArg because we have a vector of strings for token but execvp needs char**
+		char** tempArg;
+        tempArg = new char*[tokens.size()];
+        //copy tokens into tempArg
+		for(int i=0; i < tokens.size(); i++)
 		{
-			arg.push_back(tokens[i].c_str());
+            tempArg[i] = new char[tokens[i].size()];
+			strcpy(tempArg[i],tokens[i].c_str());
 		}
+
 		switch(determineCommand(tokens[0]))
 		{
 			case eLs:
@@ -600,13 +605,13 @@ void executeCommand(const string command, const list<string> commandList)
 				break;
 			 default:
 				string temp = "/bin/" + tokens[0];
-			//	for(int i=1; i < tokens.size(); i++)
-			//	{
-					execvp(temp.c_str(), arg);
-					exit(0);
-			//	}
+	
+				execvp(temp.c_str(), tempArg);
+				exit(0);
+
 				break;
 		}
+        cout<<"after switch"<<endl;
 	}
 	else if(pid >0)
 	{

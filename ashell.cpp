@@ -484,12 +484,75 @@ void executeCommand(const string command, const list<string> commandList)
     vector<string> tokens;
     stringstream iss(command);
     string aToken;
+    //tells you if you have characters that can be pushed into the tokens vector
+    bool shouldPush = false;
 
-    //parse the string so that you get rid of whitespaces
-    while(iss >> aToken)
+
+    //parse the string to get rid white spaces, and to separate '>','<', and '|' 
+    for(int i = 0; i < command.length(); i++)
     {
-        tokens.push_back(aToken);
+        //if the character is a space, it may be the end of an argument
+        if(command[i] == ' ')
+        {
+            //if we have a token to push then push it
+            if(shouldPush)
+            {
+                tokens.push_back(aToken);
+                aToken.clear();
+            }
+
+            shouldPush = false;
+        }
+
+        else if(command[i] == '|')
+        {           
+           //if we have a token to push, push it
+           if(shouldPush)
+           {
+               tokens.push_back(aToken);
+               aToken.clear();
+           }
+           //push '|'
+           tokens.push_back("|");
+           shouldPush = false;
+        }
+
+        else if(command[i] == '<')
+        {
+            if(shouldPush)
+           {
+               tokens.push_back(aToken);
+               aToken.clear();
+           }
+           tokens.push_back("<");
+           shouldPush = false;  
+        }
+
+        else if(command[i] == '>')
+        {
+           if(shouldPush)
+           {
+               tokens.push_back(aToken);
+               aToken.clear();
+           }
+           tokens.push_back(">");
+           shouldPush = false;
+        }
+
+        //regular characters
+        else
+        {    
+            //this is a regular character, so there will be a token to push, set shouldPush to true
+            shouldPush = true;
+            aToken += command[i];
+            //if we are at the end, push the token before exiting the loop
+            if(i == (command.length() - 1))
+            {
+                tokens.push_back(aToken);
+            }
+        }
     }
+
 
     //if the command was all whitespace, we exit the function
     if(tokens.empty())
@@ -497,6 +560,8 @@ void executeCommand(const string command, const list<string> commandList)
         return;
     }
 
+
+    //forking here if there is a > or | fork again?
     //switch used to determine what to do depending on the command
     switch(determineCommand(tokens[0]))
     {

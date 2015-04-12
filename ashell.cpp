@@ -562,13 +562,63 @@ void executeCommand(const string command, const list<string> commandList)
 
 
     //forking here if there is a > or | fork again?
+    pid_t pid = fork();
+	
+	if(pid <0)
+	{
+		write(STDOUT_FILENO, "fork failed", 11);
+		exit(1);
+	}
+	else if (pid ==0)
+	{
+/*		if(pipe =='<')
+		{
+			dup2(tokens[], STDIN_FILENO);
+		}
+		if(pipe == '|')
+		{
+			dup2(tokens[]. STDOUT_FILENO);
+		}*/	
+		vector <char *>arg;
+		for(int i=0; i<tokens.size(); i++)
+		{
+			arg.push_back(tokens[i].c_str());
+		}
+		switch(determineCommand(tokens[0]))
+		{
+			case eLs:
+				listFiles(tokens);
+				exit(0);
+				break;
+			case ePwd:
+				printWorkingDirectory();
+				exit(0);
+				break;
+			case eHistory:
+				showHistory(commandList);
+				exit(0);	
+				break;
+			 default:
+				string temp = "/bin/" + tokens[0];
+			//	for(int i=1; i < tokens.size(); i++)
+			//	{
+					execvp(temp.c_str(), arg);
+					exit(0);
+			//	}
+				break;
+		}
+	}
+	else if(pid >0)
+	{
+		wait(NULL);
+	}
     //switch used to determine what to do depending on the command
-    switch(determineCommand(tokens[0]))
+   /* switch(determineCommand(tokens[0]))
     {
         case eCd:
             changeDirectory(tokens);
             break;
-        case eLs:
+*      case eLs:
             listFiles(tokens);
             break;
         case ePwd:
@@ -576,13 +626,13 @@ void executeCommand(const string command, const list<string> commandList)
             break;
         case eHistory:
             showHistory(commandList);
-            break;
-        case eExit:
+            break; 
+*      case eExit:
             exit(0);
             break;
         default:
             break;
-    }
+    }*/
 }
 
 

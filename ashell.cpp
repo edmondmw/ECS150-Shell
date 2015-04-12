@@ -477,18 +477,16 @@ void listFiles(vector<string> tokens)
 
 }
 
-//function to execute a command after enter is pressed
-void executeCommand(const string command, const list<string> commandList)
-{    
-    //Used to store the string tokens after being parsed
-    vector<string> tokens;
-    stringstream iss(command);
-    string aToken;
-    //tells you if you have characters that can be pushed into the tokens vector
+//parse the command to get rid white spaces, and to separate '>','<', and '|'. Places the arguments into token
+//Also keeps track of where a new process starts, and the index is placed into processIndices
+void parseCommand(const string command, vector<string> &tokens, vector<int> &processIndices )
+{
+     //tells you if you have characters that can be pushed into the tokens vector
     bool shouldPush = false;
+    //a single argument
+    string aToken;
 
-
-    //parse the string to get rid white spaces, and to separate '>','<', and '|' 
+    
     for(int i = 0; i < command.length(); i++)
     {
         //if the character is a space, it may be the end of an argument
@@ -515,6 +513,7 @@ void executeCommand(const string command, const list<string> commandList)
            //push '|'
            tokens.push_back("|");
            shouldPush = false;
+           processIndices.push_back(tokens.size());
         }
 
         else if(command[i] == '<')
@@ -553,100 +552,129 @@ void executeCommand(const string command, const list<string> commandList)
         }
     }
 
+}
+
+//function to execute a command after enter is pressed
+void executeCommand(const string command, const list<string> commandList)
+{    
+    //Used to store the string tokens after being parsed
+    vector<string> tokens; 
+    //the starting index for the tokens vector of each process
+    vector<int> processIndices;
+       
+    //first process will always start at the 0th index in tokens   
+    processIndices.push_back(0);
+
+    parseCommand(command,tokens,processIndices);
 
     //if the command was all whitespace, we exit the function
     if(tokens.empty())
     {
         return;
     }
+    
 
-    commands myCommand = determineCommand(tokens[0]);
-    //forking here if there is a > or | fork again?
-    pid_t pid = fork();
-	
-	if(pid <0)
-	{
-		write(STDOUT_FILENO, "fork failed", 11);
-		exit(1);
-	}
-	else if (pid ==0)
-	{
-/*		if(pipe =='<')
-		{
-			dup2(tokens[], STDIN_FILENO);
-		}
-		if(pipe == '|')
-		{
-			dup2(tokens[]. STDOUT_FILENO);
-		}*/	
-        // need tempArg because we have a vector of strings for token but execvp needs char**
-		char** tempArg;
-        tempArg = new char*[tokens.size()];
-        //copy tokens into tempArg
-		for(int i=0; i < tokens.size(); i++)
-		{
-            tempArg[i] = new char[tokens[i].size()];
-			strcpy(tempArg[i],tokens[i].c_str());
-		}
-
-		switch(myCommand)
-		{
-			case eLs:
-				listFiles(tokens);
-				exit(0);
-				break;
-			case ePwd:
-				printWorkingDirectory();
-				exit(0);
-				break;
-			case eHistory:
-				showHistory(commandList);
-				exit(0);	
-				break;
-			 default:
-				string temp = "/bin/" + tokens[0];
-	
-				execvp(tokens[0].c_str(), tempArg);
-				exit(0);
-
-				break;
-		}
-        cout<<"after switch"<<endl;
-	}
-	else if(pid >0)
-	{
-		wait(NULL);
-        if(myCommand == eCd)
-        {
-            changeDirectory(tokens);
-        }
-        else if(myCommand == eExit)
-        {
-            exit(0);
-        }
-
-	}
-    //switch used to determine what to do depending on the command
-   /* switch(determineCommand(tokens[0]))
+    //for number of processes
+    for(int i = 0; i < processIndices.size(); i++)
     {
-        case eCd:
-            changeDirectory(tokens);
-            break;
-*      case eLs:
-            listFiles(tokens);
-            break;
-        case ePwd:
-            printWorkingDirectory();
-            break;
-        case eHistory:
-            showHistory(commandList);
-            break; 
-*      case eExit:
-            exit(0);
-            break;
-        default:
-            break;
-    }*/
+        //determine what the command to be executed is for the process
+        commands myCommand = determineCommand(tokens[processIndices[i]]);
+
+        //if more than one process, then there is at least one pipe
+        if(processIndices.size()>1)
+        {    
+            int pipe_fd[2];
+            pipe(pipe_fd);
+            //first command will always be writing to an input
+            if(i == 0)
+            {
+                dup2(pipe_fd[1],STDOUT_FILENO);
+                close(pipe_fd[0]);
+                close(pipe_fd[1]);
+            }
+            //if you're the last command you're always going to be reading from an output
+            else if(i == processIndices.size()-1)
+            {
+                dup2(pipe_fd[0],STDIN_FILENO);
+                close(pipe_fd[0]);
+                close(pipe_fd[1]);
+            }
+            //otherwise the command is in between pipes
+            else
+            {
+                dup2(pipe_fd[0],STDIN_FILENO);
+                dup2(pipe_fd[1],STDIN_FILENO);
+                close(pipe_fd[0]);
+                close(pipe_fd[1]);
+            }
+        }
+
+        //forking here if there is a > or | fork again?
+        pid_t pid = fork();
+    	
+    	if(pid < 0)
+    	{
+    		write(STDOUT_FILENO, "fork failed", 11);
+    		exit(1);
+    	}
+    	else if (pid ==0)
+    	{
+        /*		if(pipe =='<')
+        		{
+        			dup2(tokens[], STDIN_FILENO);
+        		}
+        		if(pipe == '|')
+        		{
+        			dup2(tokens[]. STDOUT_FILENO);
+    		}*/	
+
+            // need tempArg because we have a vector of strings for token but execvp needs char**
+    		char** tempArg;
+            tempArg = new char*[tokens.size()];
+            //copy tokens into tempArg
+    		for(int i=0; i < tokens.size(); i++)
+    		{
+                tempArg[i] = new char[tokens[i].size()];
+    			strcpy(tempArg[i],tokens[i].c_str());
+    		}
+
+    		switch(myCommand)
+    		{
+    			case eLs:
+    				listFiles(tokens);
+    				exit(0);
+    				break;
+    			case ePwd:
+    				printWorkingDirectory();
+    				exit(0);
+    				break;
+    			case eHistory:
+    				showHistory(commandList);
+    				exit(0);	
+    				break;
+    			 default:
+    				//string temp = "/bin/" + tokens[0];
+    	
+    				execvp(tokens[0].c_str(), tempArg);
+    				exit(0);
+
+    				break;
+    		}
+    	}
+    	else if(pid >0)
+    	{
+    		wait(NULL);
+            if(myCommand == eCd)
+            {
+                changeDirectory(tokens);
+            }
+            else if(myCommand == eExit)
+            {
+                exit(0);
+            }
+
+    	}
+    }
 }
 
 //When enter key is pressed place the currentCommand into the linked list and new line

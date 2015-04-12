@@ -560,7 +560,7 @@ void executeCommand(const string command, const list<string> commandList)
         return;
     }
 
-
+    commands myCommand = determineCommand(tokens[0]);
     //forking here if there is a > or | fork again?
     pid_t pid = fork();
 	
@@ -589,7 +589,7 @@ void executeCommand(const string command, const list<string> commandList)
 			strcpy(tempArg[i],tokens[i].c_str());
 		}
 
-		switch(determineCommand(tokens[0]))
+		switch(myCommand)
 		{
 			case eLs:
 				listFiles(tokens);
@@ -606,7 +606,7 @@ void executeCommand(const string command, const list<string> commandList)
 			 default:
 				string temp = "/bin/" + tokens[0];
 	
-				execvp(temp.c_str(), tempArg);
+				execvp(tokens[0].c_str(), tempArg);
 				exit(0);
 
 				break;
@@ -616,6 +616,15 @@ void executeCommand(const string command, const list<string> commandList)
 	else if(pid >0)
 	{
 		wait(NULL);
+        if(myCommand == eCd)
+        {
+            changeDirectory(tokens);
+        }
+        else if(myCommand == eExit)
+        {
+            exit(0);
+        }
+
 	}
     //switch used to determine what to do depending on the command
    /* switch(determineCommand(tokens[0]))
@@ -639,32 +648,6 @@ void executeCommand(const string command, const list<string> commandList)
             break;
     }*/
 }
-
-
-/*void forking()
-{
-	char *arg;	//last thing in args has to be NULL
-	pid_t pid = fork();
-
-	if(pid<0)
-	{
-		write(STDOUT_FILENO, "fork failed", 11);
-		exit(1);
-	}
-	//child is born and now exec's
-	else if(pid ==0)
-	{	//reads in commands not created (cat)
-		read(STDIN_FILENO,&arg,1);
-		execvp("/bin/",arg);	//how to make it so execvp goes to bin and then user input
-		exit(1);
-	}
-	//parent
-	else if(pid>0
-	{
-		//do parent stuff and wait for child to finish 
-		wait(NULL);
-	}
-}*/
 
 //When enter key is pressed place the currentCommand into the linked list and new line
 void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )

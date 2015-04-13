@@ -622,7 +622,6 @@ void executeCommand(const string command, const list<string> commandList)
                     }
                     else if(tokens[j]==">")
                     {
-                        cerr<<tokens[j+1]<<endl;
                         fd = open(tokens[j+1].c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
                         dup2(fd,STDOUT_FILENO);
                         j+=1;

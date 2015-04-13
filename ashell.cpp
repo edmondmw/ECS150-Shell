@@ -599,10 +599,83 @@ void executeCommand(const string command, const list<string> commandList)
         //if child
     	else if (pid == 0)
     	{
+            
+            // need tempArg because we have a vector of strings for token but execvp needs char**
+            char** tempArg;
+            tempArg = new char*[tokens.size()+1];
+            int fd;
+            //copy tokens into tempArg
+            //if we are at the end 
+            if(i == processIndices.size()-1)
+            {
+                //convert vector of strings into char**
+                //j is the index for tokens, and k is the index for tempArg, i is the index for processIndices
+                for(int j = processIndices[i], k =0; j < tokens.size(); j++, k++)
+                {
+                    //if there
+                    if(tokens[j] == "<")
+                    {
+                        //open the next file
+                        fd = open(tokens[j +1].c_str(), O_RDONLY);
+                        dup2(fd,STDIN_FILENO);
+                        j +=1;
+                    }
+                    else if(tokens[j]==">")
+                    {
+                        cerr<<tokens[j+1]<<endl;
+                        fd = open(tokens[j+1].c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                        dup2(fd,STDOUT_FILENO);
+                        j+=1;
+                    }
+                    else
+                    {
+                        tempArg[k] = new char[tokens[j].size()];
+                        strcpy(tempArg[k],tokens[j].c_str());
+                        if(j == tokens.size()-1)
+                        {
+                            tempArg[k+1] = new char;
+                            tempArg[k+1] = NULL;
+                        }
+                    }
+                }    
+            }
+            //if we are in the middle or the start go until next |
+            else
+            {
+                //convert vector of strings into char**
+                for(int j = processIndices[i],k = 0; j < (processIndices[i+1] - 1); j++,k++)
+                {
+                    if(tokens[j] == "<")
+                    {
+                        //open the next file
+                        fd = open(tokens[j +1].c_str(), O_RDONLY);
+                        dup2(fd,STDIN_FILENO);
+                        j +=1;
+                    }
+                    else if(tokens[j]==">")
+                    {
+                        fd = open(tokens[j+1].c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                        dup2(fd,STDOUT_FILENO);
+                        j+=1;
+                    }
+                    else
+                    {
+                        tempArg[k] = new char[tokens[j].size()];
+                        strcpy(tempArg[k],tokens[j].c_str());
+                        if(j == (processIndices[i+1]-2))
+                        {
+                            tempArg[k + 1] = new char;
+                            tempArg[k + 1]  = NULL;
+                        }
+                    }
+                }
+            }
+
+
             //piping is involved
             if(processIndices.size()>1)
             {
-             //first command will always be writing to an input
+                //first command will always be writing to an input
                 if(i == 0)
                 {
                     dup2(pipe_fd[1],STDOUT_FILENO);
@@ -626,40 +699,6 @@ void executeCommand(const string command, const list<string> commandList)
                 }    
             }
 
-            // need tempArg because we have a vector of strings for token but execvp needs char**
-    		char** tempArg;
-            tempArg = new char*[tokens.size()+1];
-            
-            //copy tokens into tempArg
-            //if we are at the end
-            if(i == processIndices.size()-1)
-            {
-                for(int j = processIndices[i], k =0; j < tokens.size(); j++, k++)
-                {
-
-                    tempArg[k] = new char[tokens[j].size()];
-                    strcpy(tempArg[k],tokens[j].c_str());
-                    if(j == tokens.size()-1)
-                    {
-                        tempArg[k+1] = new char;
-                        tempArg[k+1] = NULL;
-                    }
-                }    
-            }
-            //if we are in the middle go until next |
-            else
-            {
-        		for(int j = processIndices[i],k = 0; j < (processIndices[i+1] - 1); j++,k++)
-        		{
-                    tempArg[k] = new char[tokens[j].size()];
-        			strcpy(tempArg[k],tokens[j].c_str());
-                    if(j == (processIndices[i+1]-2))
-                    {
-                        tempArg[k + 1] = new char;
-                        tempArg[k + 1]  = NULL;
-                    }
-        		}
-            }
     		switch(myCommand)
     		{
     			case eLs:

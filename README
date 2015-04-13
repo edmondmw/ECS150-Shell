@@ -1,0 +1,32 @@
+Name(last): Wang
+Name(first): Edmond
+
+Name(last): Hao
+Name(first): Edwin
+
+Comments:
+The status of our code is we got the commands cd, ls, pwd, history, and exit working interally. Also got up/down/backspace/delete. Got forking, piping, and exec to work on commands that are not internally handled. Did not get redirection working yet.
+Used a Makefile to compile specifically "g++ -std=c++11 ashell.cpp -o ashell"
+Work Cited:
+http://www.cs.loyola.edu/~jglenn/702/S2005/Examples/dup2.html
+	-looked at examples where dup2 was use with piping and redirection
+http://www.cplusplus.com/reference/string/string/substr/
+	-used to figure out how to get a part of a string for starting path
+http://www.unix.com/man-page/linux/3/get_current_dir_name/
+	-to figure out how to get current directory path
+http://en.wikipedia.org/wiki/Pipeline_%28Unix%29
+	-used to understand how piping workings
+http://en.wikipedia.org/wiki/Redirection_%28computing%29
+	-used to understand how redirecting works
+http://linux.die.net/man/2/waitpid
+	-used to figure out how wait works with a child, when it terminates or if it is a zomibe
+http://linux.die.net/man/2/stat
+	-to find the different permissions for ls
+http://linux.die.net/man/2/chdir
+	-used to be able to change directory paths after you read
+http://pubs.opengroup.org/onlinepubs/007908775/xsh/dirent.h.html
+http://pubs.opengroup.org/onlinepubs/007908775/xsh/opendir.html
+http://pubs.opengroup.org/onlinepubs/007908775/xsh/readdir.html
+	-used for directory stream
+
+Used a lot of piazza posts as well

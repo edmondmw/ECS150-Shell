@@ -477,18 +477,16 @@ void listFiles(vector<string> tokens)
 
 }
 
-//function to execute a command after enter is pressed
-void executeCommand(const string command, const list<string> commandList)
-{    
-    //Used to store the string tokens after being parsed
-    vector<string> tokens;
-    stringstream iss(command);
-    string aToken;
-    //tells you if you have characters that can be pushed into the tokens vector
+//parse the command to get rid white spaces, and to separate '>','<', and '|'. Places the arguments into token
+//Also keeps track of where a new process starts, and the index is placed into processIndices
+void parseCommand(const string command, vector<string> &tokens, vector<int> &processIndices )
+{
+     //tells you if you have characters that can be pushed into the tokens vector
     bool shouldPush = false;
+    //a single argument
+    string aToken;
 
-
-    //parse the string to get rid white spaces, and to separate '>','<', and '|' 
+    
     for(int i = 0; i < command.length(); i++)
     {
         //if the character is a space, it may be the end of an argument
@@ -515,6 +513,7 @@ void executeCommand(const string command, const list<string> commandList)
            //push '|'
            tokens.push_back("|");
            shouldPush = false;
+           processIndices.push_back(tokens.size());
         }
 
         else if(command[i] == '<')
@@ -553,63 +552,214 @@ void executeCommand(const string command, const list<string> commandList)
         }
     }
 
+}
+
+//function to execute a command after enter is pressed
+void executeCommand(const string command, const list<string> commandList)
+{    
+    //Used to store the string tokens after being parsed
+    vector<string> tokens; 
+    //the starting index for the tokens vector of each process
+    vector<int> processIndices;
+    vector<pid_t> processIDs;
+    //first process will always start at the 0th index in tokens   
+    processIndices.push_back(0);
+
+    parseCommand(command,tokens,processIndices);
 
     //if the command was all whitespace, we exit the function
     if(tokens.empty())
     {
         return;
     }
+    
+    int prevInPipe;
 
 
-    //forking here if there is a > or | fork again?
-    //switch used to determine what to do depending on the command
-    switch(determineCommand(tokens[0]))
+    //for number of processes
+    for(int i = 0; i < processIndices.size(); i++)
     {
-        case eCd:
-            changeDirectory(tokens);
-            break;
-        case eLs:
-            listFiles(tokens);
-            break;
-        case ePwd:
-            printWorkingDirectory();
-            break;
-        case eHistory:
-            showHistory(commandList);
-            break;
-        case eExit:
-            exit(0);
-            break;
-        default:
-            break;
+        int pipe_fd[2];
+        //determine what the command to be executed is for the process
+        commands myCommand = determineCommand(tokens[processIndices[i]]);
+        //if more than one process, then there is at least one pipe
+        if(processIndices.size()>1)
+        {          
+            pipe(pipe_fd);
+        }
+
+        //forking here if there is a > or | fork again?
+        pid_t pid = fork();
+    	
+    	if(pid < 0)
+    	{
+    		write(STDOUT_FILENO, "fork failed", 11);
+    		exit(1);
+    	}
+        //if child
+    	else if (pid == 0)
+    	{
+            
+            // need tempArg because we have a vector of strings for token but execvp needs char**
+            char** tempArg;
+            tempArg = new char*[tokens.size()+1];
+            int fd;
+            //copy tokens into tempArg
+            //if we are at the end 
+            if(i == processIndices.size()-1)
+            {
+                //convert vector of strings into char**
+                //j is the index for tokens, and k is the index for tempArg, i is the index for processIndices
+                for(int j = processIndices[i], k =0; j < tokens.size(); j++, k++)
+                {
+                    //if there
+                    if(tokens[j] == "<")
+                    {
+                        //open the next file
+                        fd = open(tokens[j +1].c_str(), O_RDONLY);
+                        dup2(fd,STDIN_FILENO);
+                        j +=1;
+                    }
+                    else if(tokens[j]==">")
+                    {
+                        fd = open(tokens[j+1].c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                        dup2(fd,STDOUT_FILENO);
+                        j+=1;
+                    }
+                    else
+                    {
+                        tempArg[k] = new char[tokens[j].size()];
+                        strcpy(tempArg[k],tokens[j].c_str());
+                        if(j == tokens.size()-1)
+                        {
+                            tempArg[k+1] = new char;
+                            tempArg[k+1] = NULL;
+                        }
+                    }
+                }    
+            }
+            //if we are in the middle or the start go until next |
+            else
+            {
+                //convert vector of strings into char**
+                for(int j = processIndices[i],k = 0; j < (processIndices[i+1] - 1); j++,k++)
+                {
+                    if(tokens[j] == "<")
+                    {
+                        //open the next file
+                        fd = open(tokens[j +1].c_str(), O_RDONLY);
+                        dup2(fd,STDIN_FILENO);
+                        j +=1;
+                    }
+                    else if(tokens[j]==">")
+                    {
+                        fd = open(tokens[j+1].c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                        dup2(fd,STDOUT_FILENO);
+                        j+=1;
+                    }
+                    else
+                    {
+                        tempArg[k] = new char[tokens[j].size()];
+                        strcpy(tempArg[k],tokens[j].c_str());
+                        if(j == (processIndices[i+1]-2))
+                        {
+                            tempArg[k + 1] = new char;
+                            tempArg[k + 1]  = NULL;
+                        }
+                    }
+                }
+            }
+
+
+            //piping is involved
+            if(processIndices.size()>1)
+            {
+                //first command will always be writing to an input
+                if(i == 0)
+                {
+                    dup2(pipe_fd[1],STDOUT_FILENO);
+                    close(pipe_fd[1]);
+                    close(pipe_fd[0]);
+                }
+                //if you're the last command you're always going to be reading from an output
+                else if(i == processIndices.size()-1)
+                {
+                    dup2(prevInPipe,STDIN_FILENO);
+                    close(pipe_fd[0]);
+                    close(pipe_fd[1]);
+                }
+                //otherwise the command is in between pipes
+                else
+                {
+                    dup2(prevInPipe,STDIN_FILENO);
+                    dup2(pipe_fd[1],STDOUT_FILENO);
+                    close(pipe_fd[0]);
+                    close(pipe_fd[1]);
+                }    
+            }
+
+    		switch(myCommand)
+    		{
+    			case eLs:
+    				listFiles(tokens);
+    				exit(0);
+    				break;
+    			case ePwd:
+    				printWorkingDirectory();
+    				exit(0);
+    				break;
+    			case eHistory:
+    				showHistory(commandList);
+    				exit(0);	
+    				break;
+    			 default:
+    				execvp(tempArg[0], tempArg);
+    				exit(0);
+    				break;
+    		}
+    	}
+    	else if(pid >0)
+    	{
+    		processIDs.push_back(pid);
+            if(myCommand == eCd)
+            {
+                changeDirectory(tokens);
+            }
+            else if(myCommand == eExit)
+            {
+                exit(0);
+            }
+
+    	}
+
+        //if there is piping
+        if(processIndices.size() > 1)
+        {
+            //if at the front then close the writing end
+            if(i == 0)
+            {
+                close(pipe_fd[1]);
+            }
+            
+            else if(i == processIndices.size()-1)
+            {
+                close(prevInPipe);
+            }
+            else
+            {
+                close(prevInPipe);
+                close(pipe_fd[1]);
+            }
+
+            prevInPipe = pipe_fd[0];
+        }
+
+    }
+    for(int j = 0; j < processIDs.size(); j++)
+    {
+        waitpid(processIDs[j], NULL, 0);
     }
 }
-
-
-/*void forking()
-{
-	char *arg;	//last thing in args has to be NULL
-	pid_t pid = fork();
-
-	if(pid<0)
-	{
-		write(STDOUT_FILENO, "fork failed", 11);
-		exit(1);
-	}
-	//child is born and now exec's
-	else if(pid ==0)
-	{	//reads in commands not created (cat)
-		read(STDIN_FILENO,&arg,1);
-		execvp("/bin/",arg);	//how to make it so execvp goes to bin and then user input
-		exit(1);
-	}
-	//parent
-	else if(pid>0
-	{
-		//do parent stuff and wait for child to finish 
-		wait(NULL);
-	}
-}*/
 
 //When enter key is pressed place the currentCommand into the linked list and new line
 void enterCommand(list<string> &commandList, list<string>::const_iterator &it, string &current, string &original )

@@ -7,6 +7,8 @@ Name(first): Edwin
 Comments:
 Works for everything except for &
 The status of our code is we got the commands cd, ls, pwd, history, and exit working interally. Also got up/down/backspace/delete. Got forking, piping, and exec to work on commands that are not internally handled. Redirection works.
+
+The status of our code is we got the commands cd, ls, pwd, history, and exit working interally. Also got up/down/backspace/delete. Got forking, piping, and exec to work on commands that are not internally handled. Did not get redirection working yet.
 Used a Makefile to compile specifically "g++ -std=c++11 ashell.cpp -o ashell"
 Work Cited:
 http://www.cs.loyola.edu/~jglenn/702/S2005/Examples/dup2.html
